@@ -9,18 +9,22 @@
 <!-- Title/tab icon uses the same photo as the invitation cover. -->
 <link rel="icon" type="image/jpeg" href="hero.jpeg" />
 <link rel="apple-touch-icon" href="hero.jpeg" />
-<!-- After publishing, replace YOUR-WEBSITE-DOMAIN with the public HTTPS domain hosting these files. -->
+<!-- Public sharing metadata for WhatsApp, Messenger, Facebook and other link previews. -->
 <meta property="og:type" content="website" />
+<meta property="og:site_name" content="Pushpanjali &amp; Aashish Wedding" />
 <meta property="og:title" content="Pushpanjali &amp; Aashish | Wedding Invitation" />
 <meta property="og:description" content="Together with their families, Pushpanjali &amp; Aashish invite you to celebrate on 30 November 2026 in Birgunj, Nepal." />
-<meta property="og:url" content="https://YOUR-WEBSITE-DOMAIN/" />
-<meta property="og:image" content="https://YOUR-WEBSITE-DOMAIN/hero.jpeg" />
+<meta property="og:url" content="https://pushpanjali-aashish-wedding.vercel.app/" />
+<meta property="og:image" content="https://pushpanjali-aashish-wedding.vercel.app/hero.jpeg" />
+<meta property="og:image:secure_url" content="https://pushpanjali-aashish-wedding.vercel.app/hero.jpeg" />
 <meta property="og:image:type" content="image/jpeg" />
+<meta property="og:image:width" content="909" />
+<meta property="og:image:height" content="1363" />
 <meta property="og:image:alt" content="Pushpanjali and Aashish together" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="Pushpanjali &amp; Aashish | Wedding Invitation" />
 <meta name="twitter:description" content="Join us on 30 November 2026 in Birgunj, Nepal." />
-<meta name="twitter:image" content="https://YOUR-WEBSITE-DOMAIN/hero.jpeg" />
+<meta name="twitter:image" content="https://pushpanjali-aashish-wedding.vercel.app/hero.jpeg" />
 <meta name="twitter:image:alt" content="Pushpanjali and Aashish together" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -1046,6 +1050,21 @@ body.ready .scroll-progress{opacity:.85}
   .venue .v-map-open{top:11px;left:11px;padding:11px 13px;font-size:.78rem}
 }
 @media(max-width:390px){.venue .v-map-real{height:330px}}
+/* Keep the mobile gate on compositor layers and reduce simultaneous paint work. */
+@media(max-width:700px) and (prefers-reduced-motion:no-preference){
+  .gate-panel{
+    transform:translate3d(0,0,0);
+    backface-visibility:hidden;
+    transition:transform .84s cubic-bezier(.22,.72,.18,1);
+  }
+  .botanical-gate.opened .gate-panel.left{transform:translate3d(-105%,0,0)}
+  .botanical-gate.opened .gate-panel.right{transform:translate3d(105%,0,0)}
+  .gate-seal{transition:opacity .3s ease,transform .56s cubic-bezier(.22,1,.36,1)}
+  .botanical-gate.opened .gate-seal{transform:translate3d(-50%,-50%,0) scale(.58) rotate(-18deg)}
+  .gate-heading{transition:opacity .25s ease,transform .52s ease}
+  .botanical-gate.opened .gate-heading{transform:translate3d(-50%,-18px,0)}
+  .hc-t i{animation:none!important;filter:none!important}
+}
 </style>
 </head>
 <body class="locked">
@@ -1460,10 +1479,11 @@ body.ready .scroll-progress{opacity:.85}
     function enter(){
       if(opened)return;opened=true;
       gate.classList.add('opened');gate.setAttribute('aria-hidden','true');gate.removeAttribute('tabindex');
-      document.body.classList.remove('locked');document.body.classList.add('ready');
       window.scrollTo(0,0);
       au.play().catch(function(){});
-      setTimeout(function(){gate.remove()},reduced?350:1500);
+      // Let the door movement begin before the hero's reveal animations start.
+      setTimeout(function(){document.body.classList.remove('locked');document.body.classList.add('ready')},reduced?0:(mobile?180:90));
+      setTimeout(function(){gate.remove()},reduced?350:(mobile?1050:1500));
     }
     gate.addEventListener('click',enter);
     gate.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();enter()}});
@@ -1497,7 +1517,7 @@ body.ready .scroll-progress{opacity:.85}
 
   /* gentle parallax on story photos */
   (function(){
-    if(reduced)return;var im=$$('.s-photo img'),raf=0;
+    if(reduced||mobile)return;var im=$$('.s-photo img'),raf=0;
     function f(){raf=0;im.forEach(function(el,i){var r=el.parentNode.getBoundingClientRect();if(r.bottom<0||r.top>innerHeight)return;var c=(r.top+r.height/2-innerHeight/2)/innerHeight;el.style.transform='translateY('+(c*(i?-22:22)).toFixed(1)+'px) scale(1.12)'})}
     addEventListener('scroll',function(){if(!raf)raf=requestAnimationFrame(f)},{passive:true});f();
   })();
@@ -1586,7 +1606,13 @@ body.ready .scroll-progress{opacity:.85}
   var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}})},{threshold:.12,rootMargin:'0px 0px -50px 0px'});
   $$('.rv').forEach(function(el){io.observe(el)});
   var hi=$('#heroImg');
-  addEventListener('scroll',function(){if(!reduced&&scrollY<innerHeight*1.2)hi.style.transform='translateY('+(scrollY*.04)+'px)'},{passive:true});
+  if(!reduced&&!mobile){
+    var heroScrollFrame=0;
+    addEventListener('scroll',function(){if(!heroScrollFrame)heroScrollFrame=requestAnimationFrame(function(){
+      heroScrollFrame=0;
+      if(scrollY<innerHeight*1.2)hi.style.transform='translate3d(0,'+(scrollY*.04).toFixed(1)+'px,0)';
+    })},{passive:true});
+  }
   $$('[data-go]').forEach(function(b){b.addEventListener('click',function(){setTimeout(function(){var t=document.getElementById(b.dataset.go);t&&t.scrollIntoView({behavior:'smooth'})},60)})});
 
   /* event schedule carousel — eased scrolling, active card, dots, gentle autoplay */
@@ -1614,7 +1640,7 @@ body.ready .scroll-progress{opacity:.85}
     ['touchstart','pointerdown','wheel'].forEach(function(ev){tr.addEventListener(ev,function(){cancelAnimationFrame(anim);tr.style.scrollSnapType='';paused=true;clearTimeout(timer)},{passive:true})});
     tr.addEventListener('mouseenter',function(){paused=true});tr.addEventListener('mouseleave',function(){paused=false});
     function restart(){clearTimeout(timer);paused=false}
-    function loop(){clearTimeout(timer);timer=setTimeout(function(){if(inView&&!paused&&!reduced)goTo(cur+1);loop()},5200)}
+    function loop(){clearTimeout(timer);timer=setTimeout(function(){if(inView&&!paused&&!reduced&&!mobile)goTo(cur+1);loop()},5200)}
     new IntersectionObserver(function(es){inView=es[0].isIntersecting},{threshold:.4}).observe(tr);
     setActive(0);
     addEventListener('resize',function(){goTo(cur,true)});
@@ -1622,7 +1648,10 @@ body.ready .scroll-progress{opacity:.85}
 
   /* cinematic floral growth: each cluster blooms from scroll position (hero also blooms once the opening ends) */
   (function(){
-    var fcs=$$('[data-fc]'),hero=$('#home'),grown=false,raf=0,items=fcs.map(function(el){return{el:el,cur:0,hh:el.classList.contains('hh')}});
+    var fcs=$$('[data-fc]');
+    // The final design hides this older floral layer; avoid its continuous layout reads.
+    if(!fcs.length||getComputedStyle(fcs[0]).display==='none')return;
+    var hero=$('#home'),grown=false,raf=0,items=fcs.map(function(el){return{el:el,cur:0,hh:el.classList.contains('hh')}});
     function ease(x){return x*x*(3-2*x)}
     function target(it){
       var vh=innerHeight;
@@ -1668,7 +1697,7 @@ body.ready .scroll-progress{opacity:.85}
     src.forEach(function(im){var k=im.src.slice(-400)+im.src.length;if(!seen[k]){seen[k]=1;list.push(im.src)}});
     var st=$('#cvStage'),dots=$('#cvDots'),cv=$('#cv'),u0=list.length,full=list.slice();
     while(full.length<5)full=full.concat(list);
-    var n=full.length,cur=0,slides=[],ds=[],timer=0;
+    var n=full.length,cur=0,slides=[],ds=[],timer=0,inView=false;
     for(var di=0;di<u0;di++){(function(di){var d=document.createElement('i');d.onclick=function(){go(di);auto()};dots.appendChild(d);ds.push(d)})(di)}
     full.forEach(function(u,i){
       var b=document.createElement('button');b.className='cv-s';b.setAttribute('aria-label','Open photo '+(i%u0+1));
@@ -1684,12 +1713,14 @@ body.ready .scroll-progress{opacity:.85}
       ds.forEach(function(d,i){d.classList.toggle('on',i===cur%u0)});
     }
     function go(i){cur=(i+n)%n;render()}
-    function auto(){clearInterval(timer);if(!reduced)timer=setInterval(function(){go(cur+1)},3800)}
+    function auto(){clearInterval(timer);if(!reduced&&inView&&!document.hidden)timer=setInterval(function(){go(cur+1)},3800)}
     $('#cvP').onclick=function(){go(cur-1);auto()};$('#cvN').onclick=function(){go(cur+1);auto()};
     var x0=null;
     cv.addEventListener('pointerdown',function(e){x0=e.clientX});
     cv.addEventListener('pointerup',function(e){if(x0===null)return;var dx=e.clientX-x0;x0=null;if(Math.abs(dx)>40){go(cur+(dx<0?1:-1));auto()}});
     cv.addEventListener('mouseenter',function(){clearInterval(timer)});cv.addEventListener('mouseleave',auto);
+    new IntersectionObserver(function(entries){inView=entries[0].isIntersecting;auto()},{threshold:.2}).observe(cv);
+    document.addEventListener('visibilitychange',auto);
     render();auto();
   })();
   lb.onclick=function(){lb.classList.remove('show')};li.onclick=function(e){e.stopPropagation()};
